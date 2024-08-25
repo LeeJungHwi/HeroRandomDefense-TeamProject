@@ -2,6 +2,8 @@
 ✨ [팀 프로젝트 레포지토리](https://github.com/gdevhun/HeroRandomDefence)
 <br>
 ✨ [팀 프로젝트 스케줄링](https://unmarred-deer-17b.notion.site/9198758e37df48ce9535f7564afe2214?pvs=4)
+<br>
+✨ [UNICON 2024 출품작](https://unicon2024.notion.site/UNICON-2024-2efd0ae05b2948eda41b8ba445bb1cde)
 
 <br>
 
