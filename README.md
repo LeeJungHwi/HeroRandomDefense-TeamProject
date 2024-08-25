@@ -10,4 +10,9 @@
 
 <br>
 
+# 빌드 파일  
++ [itch.io](https://wjh9330.itch.io/herorandomdefence)
+
+<br>
+
 # 주요 기능
