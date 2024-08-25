@@ -1,4 +1,9 @@
 ⭐️ UNICON 2024 팀 프로젝트에서 기여했던 것을 구분하기 쉽게 분리한 레포 입니다.  
+
+![히랜디 썸넬](https://github.com/user-attachments/assets/954d0cbd-87d3-4ec1-bb77-978ac028478c)
+
+<br>
+
 ✨ [팀 프로젝트 레포지토리](https://github.com/gdevhun/HeroRandomDefence)
 <br>
 ✨ [팀 프로젝트 스케줄링](https://unmarred-deer-17b.notion.site/9198758e37df48ce9535f7564afe2214?pvs=4)
