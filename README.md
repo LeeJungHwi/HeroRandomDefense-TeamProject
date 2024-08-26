@@ -669,328 +669,328 @@
   <br>
   <br>
 
-  - 유닛 상호작용 디테일
-    - SelectUnit : 유닛 선택과 이동 [[SelectUnit](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/blob/main/UnitHandle/InteractUnit/SelectUnit.cs)]
-    ```csharp
-    public class SelectUnit : MonoBehaviour
-    {
-        // 1. 유닛 선택과 이동 필드
-    
-        // 선택된 유닛의 위치
-        [HideInInspector] public GameObject selectedPos;
+- 유닛 상호작용 디테일
+  - SelectUnit : 유닛 선택과 이동 [[SelectUnit](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/blob/main/UnitHandle/InteractUnit/SelectUnit.cs)]
+  ```csharp
+  public class SelectUnit : MonoBehaviour
+  {
+      // 1. 유닛 선택과 이동 필드
+  
+      // 선택된 유닛의 위치
+      [HideInInspector] public GameObject selectedPos;
 
-        // 유닛의 위치만 클릭되도록 레이어마스크 설정
-        [Header ("유닛 스폰 위치만 클릭되게")] [SerializeField] private LayerMask posLayerMask;
+      // 유닛의 위치만 클릭되도록 레이어마스크 설정
+      [Header ("유닛 스폰 위치만 클릭되게")] [SerializeField] private LayerMask posLayerMask;
 
-        // 선택된 시작 위치 백업
-        private Vector3 sPos = Vector3.zero;
+      // 선택된 시작 위치 백업
+      private Vector3 sPos = Vector3.zero;
 
-        // 클릭과 드래그를 구분하는 임계 값
-        private const float dragThreshold = 0.5f;
+      // 클릭과 드래그를 구분하는 임계 값
+      private const float dragThreshold = 0.5f;
 
-        // 드래그 상태 체크
-        [HideInInspector] public bool isDrag = false;
+      // 드래그 상태 체크
+      [HideInInspector] public bool isDrag = false;
 
-        // 이동 할 목표 지점 표시
-        [Header ("이동 할 위치 표시")] [SerializeField] private GameObject targetPos;
+      // 이동 할 목표 지점 표시
+      [Header ("이동 할 위치 표시")] [SerializeField] private GameObject targetPos;
 
-        // 마우스 클릭 시 커서 이미지
-        [Header ("마우스 클릭 커서 이미지")] [SerializeField] private Texture2D clickCursorImg;
+      // 마우스 클릭 시 커서 이미지
+      [Header ("마우스 클릭 커서 이미지")] [SerializeField] private Texture2D clickCursorImg;
 
-        // 마우스 입력 체크
-        private void Update() { Down(); }
+      // 마우스 입력 체크
+      private void Update() { Down(); }
 
-        // 2.유닛 선택과 이동 핵심 함수
-    
-        // 마우스 클릭
-        private void Down()
-        {
-            // 마우스 클릭 시
-            if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
-            {
-                // 클릭 위치 가져오기
-                Vector3 inputPosition = Input.GetMouseButtonDown(0) ? Camera.main.ScreenToWorldPoint(Input.mousePosition) : Camera.main.ScreenToWorldPoint(Input.GetTouch(0).position);
-                inputPosition.z = 0;
-    
-                // 히트된 콜라이더 가져오기
-                RaycastHit2D hit = Physics2D.Raycast(inputPosition, Vector2.zero, Mathf.Infinity, posLayerMask);
-    
-                // 히트된 콜라이더가 있는지 체크, 유닛이 있는지 체크
-                if(hit.collider == null || hit.transform.childCount < 1) { .... return; }
-    
-                // 유닛의 사정거리 표시 끄기
-                OnOffIndicateAttackRange(false);
-    
-                // 선택된 유닛의 위치 저장
-                selectedPos = hit.transform.gameObject;
-    
-                // 선택된 시작 위치 백업
-                sPos = selectedPos.transform.position;
-    
-                // 마우스 커서 변경 및 사운드
-                Cursor.SetCursor(clickCursorImg, Vector2.zero, CursorMode.ForceSoftware);
-                SoundManager.instance.SFXPlay(SoundType.Click);
-            }
-    
-            // 시작 위치가 있는지 체크
-            if(sPos == Vector3.zero) return;
-    
-            // 마우스 드래그
-            Drag();
-    
-            // 마우스 업
-            Up();
-        }
-    
-        // 마우스 드래그
-        private void Drag()
-        {
-            // 마우스를 누르고 있는 동안
-            if(Input.GetMouseButton(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Moved))
-            {
-                // 현재 위치 업데이트
-                Vector3 cPos = Input.GetMouseButton(0) ? Camera.main.ScreenToWorldPoint(Input.mousePosition) : Camera.main.ScreenToWorldPoint(Input.GetTouch(0).position);
-                cPos.z = 0;
-                selectedPos.transform.position = cPos;
-                
-                // 임계 값을 벗어나면 드래그로 인식
-                isDrag = Vector3.Distance(sPos, cPos) > dragThreshold ? true : false;
-    
-                // 히트된 콜라이더 가져오기
-                RaycastHit2D hit = Physics2D.Raycast(selectedPos.transform.position, Vector2.zero, Mathf.Infinity, posLayerMask);
-    
-                // 이동 할 목표 위치 표시하기
-                if(hit.collider != null)
-                {
-                    targetPos.SetActive(true);
-                    targetPos.transform.position = hit.collider == selectedPos.GetComponent<Collider2D>() ? sPos : hit.transform.position;
-                }
-            }
-        }
-    
-        // 마우스 업
-        private void Up()
-        {
-            // 마우스를 업 했을 때
-            if(Input.GetMouseButtonUp(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended))
-            {
-                // 1. 클릭인 경우 => 다시 시작 위치로
-                if(!isDrag)
-                {
-                    // 다시 시작 위치로
-                    selectedPos.transform.position = sPos;
-    
-                    // 시작 위치 초기화
-                    sPos = Vector3.zero;
-    
-                    // 유닛 툴팁 띄우기
-                    if(!UiUnit.instance.toolTipPanel.gameObject.activeSelf) UiUnit.instance.OpenPanel(....);
-    
-                    // 사정거리 표시 켜기
-                    OnOffIndicateAttackRange(true);
-    
-                    // 이동 할 위치 표시 끄기
-                    targetPos.SetActive(false);
-    
-                    // 마우스 커서 이미지 원래대로
-                    Cursor.SetCursor(SceneCtrlManager.instance.cursorImg, Vector2.zero, CursorMode.ForceSoftware);
-    
-                    // 판매 및 합성 패널 띄우기
-                    ....
-                    UiUnit.instance.OpenPanel(UiUnit.instance.unitSellCompPanel);
-                    ....
-                    return;
-                }
-    
-                // 2. 드래그인 경우
-    
-                // 히트된 콜라이더 가져오기
-                RaycastHit2D hit = Physics2D.Raycast(selectedPos.transform.position, Vector2.zero, Mathf.Infinity, posLayerMask);
-    
-                // 2-1. 히트된 콜라이더가 자신 => 경계 벗어난 경우 => 다시 시작 위치로 이동
-                if(hit.collider == selectedPos.GetComponent<Collider2D>())
-                {
-                    // 다시 시작 위치로
-                    selectedPos.transform.position = sPos;
-    
-                    // 시작 위치 초기화
-                    sPos = Vector3.zero;
-    
-                    // 드래그 종료
-                    isDrag = false;
-    
-                    // 이동 할 위치 표시 끄기
-                    targetPos.SetActive(false);
-    
-                    // 마우스 커서 이미지 원래대로
-                    Cursor.SetCursor(SceneCtrlManager.instance.cursorImg, Vector2.zero, CursorMode.ForceSoftware);
-    
-                    return;
-                }
-    
-                // 2-2. 히트된 콜라이더가 있는 경우 => 이동 할 수 있는 위치가 있는 경우 => 목표 위치로 이동
-    
-                // 목표 위치로
-                selectedPos.transform.position = hit.transform.position;
-    
-                // 목표 위치 오브젝트는 시작 위치로
-                hit.transform.position = sPos;
-    
-                // 시작 위치 초기화
-                sPos = Vector3.zero;
-    
-                // 드래그 종료
-                isDrag = false;
-    
-                // 이동 할 위치 표시 끄기
-                targetPos.SetActive(false);
-    
-                // 마우스 커서 원래대로
-                Cursor.SetCursor(SceneCtrlManager.instance.cursorImg, Vector2.zero, CursorMode.ForceSoftware);
-            }
-        }
-        ....
-    }
-    ```
+      // 2.유닛 선택과 이동 핵심 함수
+  
+      // 마우스 클릭
+      private void Down()
+      {
+          // 마우스 클릭 시
+          if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
+          {
+              // 클릭 위치 가져오기
+              Vector3 inputPosition = Input.GetMouseButtonDown(0) ? Camera.main.ScreenToWorldPoint(Input.mousePosition) : Camera.main.ScreenToWorldPoint(Input.GetTouch(0).position);
+              inputPosition.z = 0;
+  
+              // 히트된 콜라이더 가져오기
+              RaycastHit2D hit = Physics2D.Raycast(inputPosition, Vector2.zero, Mathf.Infinity, posLayerMask);
+  
+              // 히트된 콜라이더가 있는지 체크, 유닛이 있는지 체크
+              if(hit.collider == null || hit.transform.childCount < 1) { .... return; }
+  
+              // 유닛의 사정거리 표시 끄기
+              OnOffIndicateAttackRange(false);
+  
+              // 선택된 유닛의 위치 저장
+              selectedPos = hit.transform.gameObject;
+  
+              // 선택된 시작 위치 백업
+              sPos = selectedPos.transform.position;
+  
+              // 마우스 커서 변경 및 사운드
+              Cursor.SetCursor(clickCursorImg, Vector2.zero, CursorMode.ForceSoftware);
+              SoundManager.instance.SFXPlay(SoundType.Click);
+          }
+  
+          // 시작 위치가 있는지 체크
+          if(sPos == Vector3.zero) return;
+  
+          // 마우스 드래그
+          Drag();
+  
+          // 마우스 업
+          Up();
+      }
+  
+      // 마우스 드래그
+      private void Drag()
+      {
+          // 마우스를 누르고 있는 동안
+          if(Input.GetMouseButton(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Moved))
+          {
+              // 현재 위치 업데이트
+              Vector3 cPos = Input.GetMouseButton(0) ? Camera.main.ScreenToWorldPoint(Input.mousePosition) : Camera.main.ScreenToWorldPoint(Input.GetTouch(0).position);
+              cPos.z = 0;
+              selectedPos.transform.position = cPos;
+              
+              // 임계 값을 벗어나면 드래그로 인식
+              isDrag = Vector3.Distance(sPos, cPos) > dragThreshold ? true : false;
+  
+              // 히트된 콜라이더 가져오기
+              RaycastHit2D hit = Physics2D.Raycast(selectedPos.transform.position, Vector2.zero, Mathf.Infinity, posLayerMask);
+  
+              // 이동 할 목표 위치 표시하기
+              if(hit.collider != null)
+              {
+                  targetPos.SetActive(true);
+                  targetPos.transform.position = hit.collider == selectedPos.GetComponent<Collider2D>() ? sPos : hit.transform.position;
+              }
+          }
+      }
+  
+      // 마우스 업
+      private void Up()
+      {
+          // 마우스를 업 했을 때
+          if(Input.GetMouseButtonUp(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended))
+          {
+              // 1. 클릭인 경우 => 다시 시작 위치로
+              if(!isDrag)
+              {
+                  // 다시 시작 위치로
+                  selectedPos.transform.position = sPos;
+  
+                  // 시작 위치 초기화
+                  sPos = Vector3.zero;
+  
+                  // 유닛 툴팁 띄우기
+                  if(!UiUnit.instance.toolTipPanel.gameObject.activeSelf) UiUnit.instance.OpenPanel(....);
+  
+                  // 사정거리 표시 켜기
+                  OnOffIndicateAttackRange(true);
+  
+                  // 이동 할 위치 표시 끄기
+                  targetPos.SetActive(false);
+  
+                  // 마우스 커서 이미지 원래대로
+                  Cursor.SetCursor(SceneCtrlManager.instance.cursorImg, Vector2.zero, CursorMode.ForceSoftware);
+  
+                  // 판매 및 합성 패널 띄우기
+                  ....
+                  UiUnit.instance.OpenPanel(UiUnit.instance.unitSellCompPanel);
+                  ....
+                  return;
+              }
+  
+              // 2. 드래그인 경우
+  
+              // 히트된 콜라이더 가져오기
+              RaycastHit2D hit = Physics2D.Raycast(selectedPos.transform.position, Vector2.zero, Mathf.Infinity, posLayerMask);
+  
+              // 2-1. 히트된 콜라이더가 자신 => 경계 벗어난 경우 => 다시 시작 위치로 이동
+              if(hit.collider == selectedPos.GetComponent<Collider2D>())
+              {
+                  // 다시 시작 위치로
+                  selectedPos.transform.position = sPos;
+  
+                  // 시작 위치 초기화
+                  sPos = Vector3.zero;
+  
+                  // 드래그 종료
+                  isDrag = false;
+  
+                  // 이동 할 위치 표시 끄기
+                  targetPos.SetActive(false);
+  
+                  // 마우스 커서 이미지 원래대로
+                  Cursor.SetCursor(SceneCtrlManager.instance.cursorImg, Vector2.zero, CursorMode.ForceSoftware);
+  
+                  return;
+              }
+  
+              // 2-2. 히트된 콜라이더가 있는 경우 => 이동 할 수 있는 위치가 있는 경우 => 목표 위치로 이동
+  
+              // 목표 위치로
+              selectedPos.transform.position = hit.transform.position;
+  
+              // 목표 위치 오브젝트는 시작 위치로
+              hit.transform.position = sPos;
+  
+              // 시작 위치 초기화
+              sPos = Vector3.zero;
+  
+              // 드래그 종료
+              isDrag = false;
+  
+              // 이동 할 위치 표시 끄기
+              targetPos.SetActive(false);
+  
+              // 마우스 커서 원래대로
+              Cursor.SetCursor(SceneCtrlManager.instance.cursorImg, Vector2.zero, CursorMode.ForceSoftware);
+          }
+      }
+      ....
+  }
+  ```
 
-    <br>
+  <br>
 
-    - UpgradeUnit : 유닛 업그레이드 [[UpgradeUnit](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/blob/main/UnitHandle/InteractUnit/UpgradeUnit.cs)]
-    ```csharp
-    public class UpgradeUnit : MonoBehaviour, IConsumable
-    {
-        // 1. 등급별 업그레이드 수치, 데미지 타입별 업그레이드 수치 관리
-        public Dictionary<HeroGradeType, int> gradeUpgradeMap = new Dictionary<HeroGradeType, int>
-        {
-            { HeroGradeType.일반, 0 },
-            { HeroGradeType.고급, 0 },
-            { HeroGradeType.희귀, 0 },
-            { HeroGradeType.전설, 0 },
-            { HeroGradeType.신화, 0 },
-        };
-        public Dictionary<DamageType, int> damageUpgradeMap = new Dictionary<DamageType, int>
-        {
-            { DamageType.물리, 0 },
-            { DamageType.마법, 0 }
-        };
+  - UpgradeUnit : 유닛 업그레이드 [[UpgradeUnit](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/blob/main/UnitHandle/InteractUnit/UpgradeUnit.cs)]
+  ```csharp
+  public class UpgradeUnit : MonoBehaviour, IConsumable
+  {
+      // 1. 등급별 업그레이드 수치, 데미지 타입별 업그레이드 수치 관리
+      public Dictionary<HeroGradeType, int> gradeUpgradeMap = new Dictionary<HeroGradeType, int>
+      {
+          { HeroGradeType.일반, 0 },
+          { HeroGradeType.고급, 0 },
+          { HeroGradeType.희귀, 0 },
+          { HeroGradeType.전설, 0 },
+          { HeroGradeType.신화, 0 },
+      };
+      public Dictionary<DamageType, int> damageUpgradeMap = new Dictionary<DamageType, int>
+      {
+          { DamageType.물리, 0 },
+          { DamageType.마법, 0 }
+      };
 
-        ....
-    
-        // 2. 유닛 업그레이드
-        private void Upgrade(HeroGradeType heroGradeType)
-        {
-            // 유닛 등급 백업
-            curGradeType = heroGradeType;
-    
-            // 최대 업그레이드 체크
-            int upgradeCnt = curGradeType == HeroGradeType.일반 ? normalUpgradeCnt : legendUpgradeCnt;
-            if(upgradeCnt >= 20) { SoundManager.instance.SFXPlay(SoundType.NotEnough); return; }
-    
-            // 재화 체크
-            amount = curGradeType == HeroGradeType.일반 ? 100 + 25 * upgradeCnt : 2 + upgradeCnt;
-            if(!ConsumeCurrency()) { SoundManager.instance.SFXPlay(SoundType.NotEnough); return; }
-    
-            // 유닛 업그레이드
+      ....
+  
+      // 2. 유닛 업그레이드
+      private void Upgrade(HeroGradeType heroGradeType)
+      {
+          // 유닛 등급 백업
+          curGradeType = heroGradeType;
+  
+          // 최대 업그레이드 체크
+          int upgradeCnt = curGradeType == HeroGradeType.일반 ? normalUpgradeCnt : legendUpgradeCnt;
+          if(upgradeCnt >= 20) { SoundManager.instance.SFXPlay(SoundType.NotEnough); return; }
+  
+          // 재화 체크
+          amount = curGradeType == HeroGradeType.일반 ? 100 + 25 * upgradeCnt : 2 + upgradeCnt;
+          if(!ConsumeCurrency()) { SoundManager.instance.SFXPlay(SoundType.NotEnough); return; }
+  
+          // 유닛 업그레이드
 
-            // 1. 반복문 endPoint 설정
-            int e = curGradeType == HeroGradeType.일반 ? 3 : 2;
+          // 1. 반복문 endPoint 설정
+          int e = curGradeType == HeroGradeType.일반 ? 3 : 2;
 
-            // 2. 유닛 등급 백업 후 업그레이드 수치 증가
-            HeroGradeType standardGradeType = heroGradeType;
-            for(int i = 0; i < e; i++) gradeUpgradeMap[standardGradeType++] += 20 + 20 * (upgradeCnt / 5);
+          // 2. 유닛 등급 백업 후 업그레이드 수치 증가
+          HeroGradeType standardGradeType = heroGradeType;
+          for(int i = 0; i < e; i++) gradeUpgradeMap[standardGradeType++] += 20 + 20 * (upgradeCnt / 5);
 
-            // 3. 업그레이드 횟수 카운팅
-            if(curGradeType == HeroGradeType.일반) normalUpgradeCnt++;
-            else legendUpgradeCnt++;
-    
-            // 4. UI 업데이트 및 사운드
-            UpdateUpgradeUI(heroGradeType);
-            SoundManager.instance.SFXPlay(SoundType.Upgrade);
-        }
+          // 3. 업그레이드 횟수 카운팅
+          if(curGradeType == HeroGradeType.일반) normalUpgradeCnt++;
+          else legendUpgradeCnt++;
+  
+          // 4. UI 업데이트 및 사운드
+          UpdateUpgradeUI(heroGradeType);
+          SoundManager.instance.SFXPlay(SoundType.Upgrade);
+      }
 
-        // 버튼에 연결 하기위해 래핑
-        public void NormalUpgrade() { Upgrade(HeroGradeType.일반); }
-        public void LegendUpgrade() { Upgrade(HeroGradeType.전설); }
-    
-        // 3. 재화 구체화
+      // 버튼에 연결 하기위해 래핑
+      public void NormalUpgrade() { Upgrade(HeroGradeType.일반); }
+      public void LegendUpgrade() { Upgrade(HeroGradeType.전설); }
+  
+      // 3. 재화 구체화
 
-        // 재화 소모 수치
-        public int amount { get; set; }
+      // 재화 소모 수치
+      public int amount { get; set; }
 
-        // 재화 소모
-        public bool ConsumeCurrency()
-        {
-            if(curGradeType == HeroGradeType.일반) return CurrencyManager.instance.ConsumeCurrency(amount, true);
-            return CurrencyManager.instance.ConsumeCurrency(amount, false);
-        }
+      // 재화 소모
+      public bool ConsumeCurrency()
+      {
+          if(curGradeType == HeroGradeType.일반) return CurrencyManager.instance.ConsumeCurrency(amount, true);
+          return CurrencyManager.instance.ConsumeCurrency(amount, false);
+      }
 
-        ....
-    }
-    ```
+      ....
+  }
+  ```
 
-    <br>
+  <br>
 
-    - SellUnit : 유닛 판매 [[SellUnit](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/blob/main/UnitHandle/InteractUnit/SellUnit.cs)]
-    ```csharp
-    public class SellUnit : MonoBehaviour
-    {
-        // 1. 유닛 판매
-        public void Sell()
-        {
-            // 선택된 위치에 유닛이 있는지 체크
-            if(SelectUnit.instance.selectedPos.transform.childCount < 1) { SoundManager.instance.SFXPlay(SoundType.NotEnough); return; }
-    
-            // 신화 등급은 팔 수 없음
-            CharacterBase selectedUnit = SelectUnit.instance.selectedPos.transform.GetChild(0).GetComponent<CharacterBase>();
-            HeroGradeType selectedGradeType = selectedUnit.heroInfo.heroGradeType;
-            if(selectedGradeType == HeroGradeType.신화) { SoundManager.instance.SFXPlay(SoundType.NotEnough); return; }
-    
-            // 판매 할 유닛 처리
-    
-            // 1.유닛이 한 개면 맵핑 삭제하기, 아니면 자식 수 감소하기
-            UnitType selectedUnitType = selectedUnit.heroInfo.unitType;
-            if(SelectUnit.instance.selectedPos.transform.childCount == 1) GetUnitBase.unitPosMap[selectedUnitType].Remove(SelectUnit.instance.selectedPos);
-            else --GetUnitBase.unitPosMap[selectedUnitType][SelectUnit.instance.selectedPos];
-    
-            // 2.가장 마지막 자식 부모 해제하고 풀에 반환하기
-            GameObject selectedCharacter = SelectUnit.instance.selectedPos.transform.GetChild(SelectUnit.instance.selectedPos.transform.childCount - 1).gameObject;
-            selectedCharacter.transform.SetParent(PoolManager.instance.poolSet.transform);
-            PoolManager.instance.ReturnPool(PoolManager.instance.unitPool.queMap, selectedCharacter, selectedUnitType);
-    
-            // 3.재화 처리
-            if(selectedGradeType == HeroGradeType.일반 || selectedGradeType == HeroGradeType.고급) CurrencyManager.instance.AcquireCurrency(soldierCnt > 0 ? 2 * (20 + 20 * (int)selectedGradeType) : 20 + 20 * (int)selectedGradeType, true);
-            else if(selectedGradeType == HeroGradeType.희귀 || selectedGradeType == HeroGradeType.전설) CurrencyManager.instance.AcquireCurrency((int)selectedGradeType, false);
-    
-            // 4.유닛 수 처리
-            GetUnitBase.CurUnit -= 1;
+  - SellUnit : 유닛 판매 [[SellUnit](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/blob/main/UnitHandle/InteractUnit/SellUnit.cs)]
+  ```csharp
+  public class SellUnit : MonoBehaviour
+  {
+      // 1. 유닛 판매
+      public void Sell()
+      {
+          // 선택된 위치에 유닛이 있는지 체크
+          if(SelectUnit.instance.selectedPos.transform.childCount < 1) { SoundManager.instance.SFXPlay(SoundType.NotEnough); return; }
+  
+          // 신화 등급은 팔 수 없음
+          CharacterBase selectedUnit = SelectUnit.instance.selectedPos.transform.GetChild(0).GetComponent<CharacterBase>();
+          HeroGradeType selectedGradeType = selectedUnit.heroInfo.heroGradeType;
+          if(selectedGradeType == HeroGradeType.신화) { SoundManager.instance.SFXPlay(SoundType.NotEnough); return; }
+  
+          // 판매 할 유닛 처리
+  
+          // 1.유닛이 한 개면 맵핑 삭제하기, 아니면 자식 수 감소하기
+          UnitType selectedUnitType = selectedUnit.heroInfo.unitType;
+          if(SelectUnit.instance.selectedPos.transform.childCount == 1) GetUnitBase.unitPosMap[selectedUnitType].Remove(SelectUnit.instance.selectedPos);
+          else --GetUnitBase.unitPosMap[selectedUnitType][SelectUnit.instance.selectedPos];
+  
+          // 2.가장 마지막 자식 부모 해제하고 풀에 반환하기
+          GameObject selectedCharacter = SelectUnit.instance.selectedPos.transform.GetChild(SelectUnit.instance.selectedPos.transform.childCount - 1).gameObject;
+          selectedCharacter.transform.SetParent(PoolManager.instance.poolSet.transform);
+          PoolManager.instance.ReturnPool(PoolManager.instance.unitPool.queMap, selectedCharacter, selectedUnitType);
+  
+          // 3.재화 처리
+          if(selectedGradeType == HeroGradeType.일반 || selectedGradeType == HeroGradeType.고급) CurrencyManager.instance.AcquireCurrency(soldierCnt > 0 ? 2 * (20 + 20 * (int)selectedGradeType) : 20 + 20 * (int)selectedGradeType, true);
+          else if(selectedGradeType == HeroGradeType.희귀 || selectedGradeType == HeroGradeType.전설) CurrencyManager.instance.AcquireCurrency((int)selectedGradeType, false);
+  
+          // 4.유닛 수 처리
+          GetUnitBase.CurUnit -= 1;
 
-            ....
-        }
-    }
-    ```
+          ....
+      }
+  }
+  ```
 
-    <br>
+  <br>
 
-    - ToolTipUnit : 유닛 툴팁 정보 [[ToolTipUnit](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/blob/main/UnitHandle/InteractUnit/ToolTipUnit.cs)]
-    ```csharp
-    public class ToolTipUnit : MonoBehaviour
-    {
-        1. 유닛 툴팁 정보를 표시 할 UI 필드
-        [Header ("유닛 이미지")] [SerializeField] private Image unitImage;
-        ....
-    
-        // 선택된 유닛의 툴팁 정보 업데이트
-        public void SetToolTip(HeroInfo heroInfo, AbilityUiInfo abilityInfo, AbilityUiInfo hiddenAbilityInfo, CharacterBase characterBase)
-        {
-            unitImage.sprite = heroInfo.unitSprite;
-            unitNameText.text = heroInfo.unitType.ToString();
-            unitInfoText.text = $"{heroInfo.heroGradeType} / {heroInfo.damageType} / {heroInfo.attackType}";
-            unitDmgText.text = ((int)characterBase.GetApplyAttackDamage(characterBase.heroInfo.attackDamage)).ToString();
-            unitSpeedText.text = heroInfo.attackSpeed.ToString();
-            abilityImage.sprite = abilityInfo.abilitySprite;
-            abilityNameText.text = characterBase.GetComponent<AbilityManage>().maxStamina > 0 ? abilityInfo.abilityName + $" (스태미너 : {characterBase.GetComponent<AbilityManage>().maxStamina})" : abilityInfo.abilityName;
-            abilityContentText.text = abilityInfo.abilityContent;
-            ....
-        }
-    }
-    ```
+  - ToolTipUnit : 유닛 툴팁 정보 [[ToolTipUnit](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/blob/main/UnitHandle/InteractUnit/ToolTipUnit.cs)]
+  ```csharp
+  public class ToolTipUnit : MonoBehaviour
+  {
+      1. 유닛 툴팁 정보를 표시 할 UI 필드
+      [Header ("유닛 이미지")] [SerializeField] private Image unitImage;
+      ....
+  
+      // 선택된 유닛의 툴팁 정보 업데이트
+      public void SetToolTip(HeroInfo heroInfo, AbilityUiInfo abilityInfo, AbilityUiInfo hiddenAbilityInfo, CharacterBase characterBase)
+      {
+          unitImage.sprite = heroInfo.unitSprite;
+          unitNameText.text = heroInfo.unitType.ToString();
+          unitInfoText.text = $"{heroInfo.heroGradeType} / {heroInfo.damageType} / {heroInfo.attackType}";
+          unitDmgText.text = ((int)characterBase.GetApplyAttackDamage(characterBase.heroInfo.attackDamage)).ToString();
+          unitSpeedText.text = heroInfo.attackSpeed.ToString();
+          abilityImage.sprite = abilityInfo.abilitySprite;
+          abilityNameText.text = characterBase.GetComponent<AbilityManage>().maxStamina > 0 ? abilityInfo.abilityName + $" (스태미너 : {characterBase.GetComponent<AbilityManage>().maxStamina})" : abilityInfo.abilityName;
+          abilityContentText.text = abilityInfo.abilityContent;
+          ....
+      }
+  }
+  ```
