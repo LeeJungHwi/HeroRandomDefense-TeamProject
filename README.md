@@ -994,3 +994,72 @@
       }
   }
   ```
+<br>
+<br>
+
+⚡ 유닛 스킬 시스템 [[Ability](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/tree/main/Ability)]
+- 스킬 데이터 : Scriptable Object
+- ![히랜디 스킬 스크립터블](https://github.com/user-attachments/assets/2b145cca-c842-4841-b591-51b7bf7cd8ab)
+
+<br>
+
+- 유닛 스킬 UML
+  - Ability Base : Scriptable Object 상속 => 모든 스킬 공통 멤버 정의
+  - IHidden Ability : 히든 스킬을 갖는 스크립트의 공통 멤버 정의
+  - AsyncAbility Base : Ability Base 상속 => 비동기 스킬 공통 멤버 정의
+  - SyncAbility Base : Ability Base 상속 => 동기 스킬 공통 멤버 정의
+  - Ability Implement : 기반 스킬 상속, 필요 시 히든 스킬을 다중상속해서 각 스킬 구체화
+  - Ability Manage : Ability Base 참조 => 각 스킬 데이터가 갖는 상태를 관리
+- ![히랜디 스킬](https://github.com/user-attachments/assets/edab0974-cd2d-461f-b966-a4d9b310c2d4)
+
+<br>
+
+- 스킬 시전 메커니즘 [[AbilityManage](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/blob/main/Ability/Base/AbilityManage.cs)]
+  ```csharp
+  public class AbilityManage : MonoBehaviour
+  {
+      // Ability Base 참조 => 다형성을 이용해 구체화 클래스의 스킬이 시전됨
+      [Header ("스킬 정보")] public AbilityBase ability;
+  
+      // 스태미너 => 프로퍼티로 설정해서 스태미너가 가득 차게되면 스킬을 시전함
+      private int stamina;
+      public int Stamina
+      {
+          get { return stamina; }
+          set
+          {
+              stamina = value;
+  
+              // 최대 스태미너가 되고 타겟이 존재 할 때 스킬 시전
+              if((louizyCnt == 0 && stamina >= maxStamina && characterBase.isOnTarget) || (louizyCnt > 0 && stamina >= maxStamina - 1 && characterBase.isOnTarget))
+              {
+                  // 드래그인 경우 => 스킬 시전 안 함
+                  if(SelectUnit.instance.isDrag && transform.parent.gameObject.name == SelectUnit.instance.selectedPos.name) return;
+
+                  // 스킬 시전
+                  if(ability.abilitySoundType != SoundType.GetUnit) SoundManager.instance.SFXPlay(ability.abilitySoundType);
+                  if(ability is SyncAbilityBase syncAbilityBase) syncAbilityBase.CastAbility(characterBase);
+                  else if(ability is AsyncAbilityBase asyncAbilityBase) StartCoroutine(asyncAbilityBase.CastAbility(characterBase));
+                  stamina = 0;
+              }
+
+              // 스태미너 UI 업데이트
+              UpdateStaminaUI();
+          }
+      }
+
+      ....
+  
+      // 스태미너 증가 코루틴
+      private IEnumerator StaminaIncreament()
+      {
+          while(true)
+          {
+              ++Stamina;
+              yield return StageManager.instance.oneSecond;
+          }
+      }
+
+      ....
+  }
+  ```
