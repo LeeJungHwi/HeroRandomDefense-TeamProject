@@ -1073,3 +1073,302 @@
       ....
   }
   ```
+
+  <br>
+  <br>
+
+⚡ 매니저 클래스 [[Managers](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/tree/main/Manager)]
+- 스테이지 매니저 [[StageManager](https://github.com/LeeJungHwi/HeroRandomDefense-TeamProject/blob/main/Manager/StageManager/StageManager.cs)]
+  - Stage Data : Scriptable Object 상속 => 스테이지 공통 멤버 정의
+  - Stage Manager : Stage Data를 참조해서 관리 => 스테이지 시작 및 종료 관리
+  ```csharp
+  public class StageManager : MonoBehaviour
+  {
+      // 1. 스테이지 필드
+  
+      // 스테이지 데이터 관리
+      [HideInInspector] public List<StageData> stageList = new List<StageData>();
+  
+      // 현재 스테이지 => 프로퍼티로 설정 => 스테이지가 끝난 후 재화 획득 및 다음 스테이지 시작, 마지막 스테이지가 끝난 후 게임 클리어
+      [Header ("최대 스테이지")] public int maxStage;
+      private int curStage;
+      public int CurStage
+      {
+          get { return curStage; }
+          set
+          {
+              curStage = value;
+              if(curStage < maxStage)
+              {
+                  // 다음 스테이지 시작
+                  StartStage(value);
+                  CurrencyManager.instance.AcquireCurrency((curStage - 1) * 10 + CurrencyManager.instance.Gold / 10, true);
+              }
+              else
+              {
+                  // 게임 클리어
+                  GameManager.instance.PlayerGameWin();
+                  StopAllCoroutines();
+              }
+          }
+      }
+
+      ....
+  
+      // 현재 몬스터 수 => 프로퍼티로 설정 => UI 업데이트, 최대 몬스터 수를 넘어가면 게임 실패
+      [Header ("최대 몬스터 수")] [SerializeField] private int maxEnemyCnt;
+      [HideInInspector] public float maxEnemyFloatCnt;
+      private int enemyCnt;
+      public int EnemyCnt
+      {
+          get { return enemyCnt; }
+          set
+          {
+              if(value < 0) return;
+              
+              enemyCnt = value;
+              if(EnemyCnt > maxEnemyCnt)
+              {
+                  // 게임 실패
+                  GameManager.instance.PlayerGameOver();
+                  StopAllCoroutines();
+              }
+
+              // 몬스터 수 UI 업데이트
+              UpdateEnemyCntUI(value);
+          }
+      }
+
+      ....
+
+      // 2. 스테이지 핵심 함수
+  
+      // 스테이지 초기화
+      private void InitStage()
+      {
+          // 1. 몬스터 이동경로 맵핑
+          // Key : 스폰 위치
+          // Value : 이동 경로
+          stageTypePathMap.Add(pathPosList.gameObjectList[0], pathList[0]);
+          stageTypePathMap.Add(pathPosList.gameObjectList[1], pathList[1]);
+          stageTypePathMap.Add(pathPosList.gameObjectList[2], pathList[2]);
+  
+          // 2. 기준 스테이지 몬스터 스탯 맵핑
+          // Key : 스테이지 인덱스
+          // Value : 기준 스테이지 스탯
+          for(int i = 0; i < standardMonsterStatList.Count; i++) standardMonsterStatMap.Add(i, standardMonsterStatList[i]);
+
+          // 3. 스테이지 데이터 생성 및 초기화
+          for(int i = 0; i < maxStage; i++)
+          {
+              // 스테이지 데이터 생성
+              StageData stageData = ScriptableObject.CreateInstance<StageData>();
+  
+              // 스테이지 번호
+              stageData.stageNumber = i + 1;
+  
+              // 스테이지 타입
+              if(stageData.stageNumber % 10 == 0) stageData.stageType = StageType.Boss;
+              else stageData.stageType = stageData.stageNumber % 5 == 0 ? StageType.MiniBoss : StageType.Normal;
+  
+              // 스테이지 시간, 몬스터 타입, 몬스터 소환 위치, 스테이지 재화
+              switch(stageData.stageType)
+              {
+                  case StageType.Normal :
+                      stageData.stageTime = 20;
+                      stageData.enemyType = (EnemyType)(stageData.stageNumber / 5 * 2);
+                      stageData.spawnPos.gameObjectList.Add(pathPosList.gameObjectList[0]);
+                      stageData.spawnPos.gameObjectList.Add(pathPosList.gameObjectList[1]);
+                      stageData.stageCurrency = 1 + stageData.stageNumber / 20;
+                      break;
+                  case StageType.MiniBoss :
+                      stageData.stageTime = 30;
+                      ....
+                      break;
+                  case StageType.Boss :
+                      stageData.stageTime = 60;
+                      ....
+                      break;
+              }
+
+              // 스테이지 데이터 리스트에 추가
+              stageList.Add(stageData);
+          }
+      }
+  
+      // 스테이지 시작
+      public void StartStage(int cur)
+      {
+          // 스테이지 타입에 따라 스테이지 시작
+          StageData stage = stageList[cur];
+          switch(stage.stageType)
+          {
+              // 일반 스테이지 시작
+              case StageType.Normal : StartCoroutine(StartNormalStage(stage)); break;
+
+              // 미니보스 스테이지 시작
+              case StageType.MiniBoss : StartCoroutine(StartMiniBossStage(stage)); break;
+
+              // 보스 스테이지 시작
+              case StageType.Boss : StartCoroutine(StartBossStage(stage)); break;
+          }
+          
+          // UI 업데이트
+          UpdateStageNumUI(stage);
+          UpdateStageTimeUI(stage.stageTime);
+      }
+  
+      // 일반 스테이지 시작
+      private IEnumerator StartNormalStage(StageData stage)
+      {
+          // 배경음
+          switch(stage.stageNumber)
+          {
+              case 1 : SoundManager.instance.BgmSoundPlay(BgmType.구간1에서9); break;
+              case 11 : SoundManager.instance.BgmSoundPlay(BgmType.구간11에서19); break;
+              ....
+              default : break;
+          }
+  
+          // 몬스터 소환 => 스테이지 시간 만큼 1초 마다 소환
+          int stageTime = stage.stageTime;
+          for(int i = 0; i < stage.stageTime; i++)
+          {
+              EnemySpawn(stage);
+              yield return oneSecond;
+              UpdateStageTimeUI(--stageTime);
+          }
+
+          // 스테이지 시간이 끝나면 다음 스테이지 => 프로퍼티가 set 되면서 다음 스테이지 시작
+          ++CurStage;
+      }
+  
+      // 미니보스 스테이지 시작
+      private IEnumerator StartMiniBossStage(StageData stage)
+      {
+          // 몬스터 소환 => 미니보스 한 번 소환
+          GameObject miniBoss = EnemySpawn(stage);
+          int stageTime = stage.stageTime;
+          for(int i = 0; i < stage.stageTime; i++)
+          {
+              yield return oneSecond;
+  
+              // 필드에 몬스터가 없으면 시간단축
+              if(EnemyCnt == 0 && stageTime > 10)
+              {
+                  i = 0;
+                  stageTime = 10;
+                  stage.stageTime = 10;
+                  UpdateStageTimeUI(10);
+                  continue;
+              }
+  
+              UpdateStageTimeUI(--stageTime);
+          }
+  
+          // 미니보스 잡았는지 체크 => 못 잡은 경우 풀에 반환
+          if(miniBoss.activeSelf)
+          {
+              PoolManager.instance.ReturnPool(PoolManager.instance.enemyPool.queMap, miniBoss, stage.enemyType);
+              EnemyCnt--;
+          }
+  
+          // 스테이지 시간이 끝나면 다음 스테이지 => 프로퍼티가 set 되면서 다음 스테이지 시작
+          ++CurStage;
+      }
+  
+      // 보스 스테이지 시작
+      private IEnumerator StartBossStage(StageData stage)
+      {
+          // 배경음
+          switch(stage.stageNumber)
+          {
+              case 10 : SoundManager.instance.BgmSoundPlay(BgmType.스테이지10); break;
+              case 20 : SoundManager.instance.BgmSoundPlay(BgmType.스테이지20); break;
+              ....
+              default : break;
+          }
+  
+          // 몬스터 소환 => 보스 한 번 소환
+          GameObject boss = EnemySpawn(stage);
+          int stageTime = stage.stageTime;
+          int tempStageTime = stage.stageTime;
+          for(int i = 0; i < stage.stageTime; i++)
+          {
+              yield return oneSecond;
+  
+              // 스테이지 시간 중간에 보스를 잡았으면
+              if(!boss.activeSelf)
+              {
+                  // 마지막 스테이지에서 잡았으면 => 게임 클리어
+                  if(stage.stageNumber == maxStage)
+                  {
+                      GameManager.instance.PlayerGameWin();
+                      yield break;
+                  }
+  
+                  // 필드에 몬스터가 없으면 시간단축
+                  if(EnemyCnt == 0 && stageTime > 10)
+                  {
+                      i = 0;
+                      stageTime = 10;
+                      stage.stageTime = 10;
+                      UpdateStageTimeUI(10);
+                      continue;
+                  }
+              }
+  
+              UpdateStageTimeUI(--stageTime);
+              tempStageTime--;
+          }
+  
+          // 보스 잡았는지 체크 => 못 잡은 경우 게임 실패
+          if(boss.activeSelf)
+          {
+              // 게임 실패
+              GameManager.instance.PlayerGameOver();
+              yield break;
+          }
+  
+          // 스테이지 시간이 끝나면 다음 스테이지 => 프로퍼티가 set 되면서 다음 스테이지 시작
+          ++CurStage;
+      }
+  
+      // 몬스터 소환
+      private GameObject EnemySpawn(StageData stage)
+      {
+          // 소환된 몬스터
+          GameObject instantEnemy = null;
+
+          // 몬스터 풀링 및 스탯 초기화
+          for(int i = 0; i < stage.spawnPos.gameObjectList.Count; i++)
+          {
+              // 1. 몬스터 풀링
+              instantEnemy = PoolManager.instance.GetPool(PoolManager.instance.enemyPool.queMap, stage.enemyType);
+              instantEnemy.transform.position = stage.spawnPos.gameObjectList[i].transform.position;
+              ....
+
+              // 2. 몬스터 스탯 설정
+  
+              // 일반 스테이지
+              if(stage.stageType != StageType.MiniBoss && stage.stageType != StageType.Boss)
+              {
+                  enemyBase.maxHp = standardMonsterStatMap[CurStage / 10].hp + standardMonsterStatMap[CurStage / 10].increaseHp * CurStage;
+                  enemyBase.CurrentHp = standardMonsterStatMap[CurStage / 10].hp + standardMonsterStatMap[CurStage / 10].increaseHp * CurStage;
+                  ....
+                  continue;
+              }
+  
+              // 미니 보스 및 보스 스테이지
+              enemyBase.maxHp = stage.stageType == StageType.MiniBoss ? standardMonsterStatMap[CurStage / 10].bossHp : standardMonsterStatMap[CurStage / 10].bossHp * 5;
+              enemyBase.CurrentHp = stage.stageType == StageType.MiniBoss ? standardMonsterStatMap[CurStage / 10].bossHp : standardMonsterStatMap[CurStage / 10].bossHp * 5;
+              ....
+          }
+
+          // 3. 소환된 몬스터 리턴 => 미니보스 및 보스 오브젝트를 가져오도록 리턴
+          return instantEnemy;
+      }
+
+      ....
+  }
+  ```
