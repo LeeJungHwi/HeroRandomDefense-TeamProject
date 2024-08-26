@@ -1570,3 +1570,117 @@ public class SoundManager : MonoBehaviour
     ....
 }
 ```
+
+<br>
+<br>
+
+⚡ 유닛과 몬스터 상호작용
+```csharp
+
+// 1. 공격력에 업그레이드 수치 적용
+public float GetApplyAttackDamage(float basicAttackDamage)
+{
+    float applyAttack = heroInfo.damageType == DamageType.물리
+        ? (basicAttackDamage +
+           basicAttackDamage * UpgradeUnit.instance.damageUpgradeMap[DamageType.물리] / 100
+           + basicAttackDamage * UpgradeUnit.instance.gradeUpgradeMap[heroInfo.heroGradeType] / 100)
+        : (basicAttackDamage +
+           basicAttackDamage * UpgradeUnit.instance.damageUpgradeMap[DamageType.마법] / 100
+           + basicAttackDamage * UpgradeUnit.instance.gradeUpgradeMap[heroInfo.heroGradeType] / 100);
+        
+    return applyAttack;
+}
+
+// 2. 몬스터 피격 데미지에 방어력 수치 적용
+public void TakeDamage(float damage, DamageType dmgType)
+{
+    float applyDmg = damage;
+
+    // 물리 데미지
+    if(dmgType == DamageType.물리)
+    {
+        float applyPhyDef = phyDef - DecreasePhyDef;
+        applyDmg = applyPhyDef > 0 ? applyDmg * (1 - phyDef / (phyDef + 100)) : damage;
+        CurrentHp -= applyDmg;
+        if(applyDmg > 0) FloatingDmg(applyDmg);
+        return;
+    }
+
+    // 마법 데미지
+    float applyMagDef = magDef - decreaseMagDef;
+    applyDmg = applyMagDef > 0 ? applyDmg * (1 - magDef / (magDef + 100)) : damage;
+    CurrentHp -= applyDmg;
+    if(applyDmg > 0) FloatingDmg(applyDmg);
+}
+
+// 3. 몬스터 타격
+private void OnTriggerEnter2D(Collider2D other)
+{
+    if (other.gameObject.CompareTag("Enemy"))
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, 0.001f);
+        foreach (Collider2D hit in hits)
+        {
+            if (hit.CompareTag("Enemy"))
+            {
+                EnemyBase enemyBase = hit.GetComponent<EnemyBase>();
+
+                // 공격력의 업그레이드와 몬스터의 방어력을 적용한 최종 데미지로 몬스터 타격
+                enemyBase.TakeDamage(characterBase.GetApplyAttackDamage(attackDamage), damageType);
+            }
+        }
+    }
+}
+
+// 4. 플로팅 데미지
+private void FloatingDmg(float dmg)
+{
+    // 플로팅 데미지 풀링
+    FloatingText instantFloatingText = PoolManager.instance.GetPool(PoolManager.instance.floatingTextPool.queMap, FloatingTextType.데미지플로팅).GetComponent<FloatingText>();
+
+    // 플로팅 데미지 텍스트 설정, 단위 변환 K & M
+    if(dmg < 1000) instantFloatingText.text.text = $"{dmg:0.0}";
+    else if(dmg < 1000000) instantFloatingText.text.text = $"{dmg / 1000f:0.0}K";
+    else instantFloatingText.text.text = $"{dmg / 1000000f:0.0}M";
+
+    // 플로팅 데미지 위치 설정
+    Vector3 worldToScreen = Camera.main.WorldToScreenPoint(transform.position + Vector3.up * 0.5f);
+    RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)instantFloatingText.canvasTransform, worldToScreen, null, out Vector2 localPoint);
+    instantFloatingText.GetComponent<RectTransform>().localPosition = localPoint;
+}
+
+// 5.스턴
+
+// 스턴 시간 설정
+private float curStunTime;
+public float SetStunTime
+{
+    get { return curStunTime; }
+    set
+    {
+        // 스턴 시간 설정
+        curStunTime = value;
+        moveSpeed = 0;
+        ....
+    }
+}
+
+// 스턴 시간이 설정되면 스턴 시작
+private void Update() { GetStun(); }
+private void GetStun()
+{
+    if(curStunTime > 0)
+    {
+        // 스턴시간 감소
+        curStunTime -= Time.deltaTime;
+
+        // 스턴시간이 끝나면 스턴 종료
+        if(curStunTime <= 0)
+        {
+            curStunTime = 0;
+            moveSpeed = originMoveSpeed;
+            ....
+        }
+    }
+}
+```
