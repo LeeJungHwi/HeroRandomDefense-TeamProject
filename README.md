@@ -18,7 +18,7 @@
 <br>
 
 # 빌드 파일  
-+ [itch.io](https://wjh9330.itch.io/herorandomdefence)
++ [itch.io](https://wjh9330.itch.io/herorandomdefence) : UNICON2024 입력
 
 <br>
 
