@@ -1,4 +1,4 @@
-⭐️ UNICON 2024 팀 프로젝트에서 기여했던 것을 구분하기 쉽게 분리한 레포 입니다. [[UNICON 2024 출품작](https://unicon2024.notion.site/UNICON-2024-2efd0ae05b2948eda41b8ba445bb1cde)]
+⭐️ UNICON 2024 및 JISEF 2024 팀 프로젝트에서 기여했던 것을 구분하기 쉽게 분리한 레포 입니다.
 
 <br>
 
@@ -6,19 +6,25 @@
 
 <br>
 
-✨ [팀 프로젝트 레포지토리](https://github.com/gdevhun/HeroRandomDefence)
-<br>
-✨ [팀 프로젝트 스케줄링](https://unmarred-deer-17b.notion.site/9198758e37df48ce9535f7564afe2214?pvs=4)
+# 프로젝트 개요
+| 개발 환경 | Unity |
+|:------:|:------:|
+| 개발 기간 | 2024/07/04 ~ 2024/08/20 |
+| 게임 설명 | 유닛 랜덤 디펜스 |
+| 담당 역할 | 게임 내 전반적인 시스템 개발 |
+| 팀 레포지토리 | [GitHub](https://github.com/gdevhun/HeroRandomDefence) |
+| 스케줄링 | [Notion](https://unmarred-deer-17b.notion.site/9198758e37df48ce9535f7564afe2214?pvs=4) |
+| 공모전 수상 | JISEF 2024 최우수상 |
 
 <br>
 
 # 시연 영상  
-+ [히랜디](https://youtu.be/7rK0P3Eyj0w)
++ [Hero Random Defense](https://youtu.be/7rK0P3Eyj0w)
 
 <br>
 
 # 빌드 파일  
-+ [itch.io](https://wjh9330.itch.io/herorandomdefence) : UNICON2024 입력
++ [itch.io](https://wjh9330.itch.io/herorandomdefence)
 
 <br>
 
